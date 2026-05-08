@@ -167,10 +167,10 @@ export function drawSprite(ctx, key, x, y, size, fallbackFn) {
     ctx.save();
     ctx.drawImage(
       sprite,
-      x - diameter / 2,
-      y - diameter / 2,
-      diameter,
-      diameter
+      Math.floor(x - diameter / 2),
+      Math.floor(y - diameter / 2),
+      Math.floor(diameter),
+      Math.floor(diameter)
     );
     ctx.restore();
   } else if (fallbackFn) {

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Sprite Debug Test</title>
+<style>
+body { background: #111; color: #fff; font-family: monospace; padding: 20px; }
+canvas { border: 1px solid #333; margin: 10px 0; }
+#log { background: #000; padding: 10px; border: 1px solid #333; height: 200px; overflow-y: auto; font-size: 11px; }
+</style>
+</head>
+<body>
+<h1>Sprite Loader Debug Test</h1>
+<canvas id="test" width="400" height="200"></canvas>
+<div id="log"></div>
+
+<script type="module">
+import * as SL from './SpriteLoader.js';
+
+const log = (msg) => {
+  const div = document.getElementById('log');
+  div.innerHTML += `<div>${msg}</div>`;
+  console.log(msg);
+};
+
+log('Starting sprite loader test...');
+
+try {
+  await SL.init();
+  log(`✓ SpriteLoader initialized`);
+  log(`Loaded sprites: ${SL.getLoadedKeys().join(', ')}`);
+  log(`Is rat loaded? ${SL.isLoaded('rat')}`);
+  
+  const ratSprite = SL.getSprite('rat');
+  if (ratSprite) {
+    log(`✓ Rat sprite found: ${ratSprite.width}x${ratSprite.height}`);
+    log(`  Complete: ${ratSprite.complete}, Natural size: ${ratSprite.naturalWidth}x${ratSprite.naturalHeight}`);
+  } else {
+    log(`✗ Rat sprite is null`);
+  }
+  
+  // Draw test
+  const canvas = document.getElementById('test');
+  const ctx = canvas.getContext('2d');
+  
+  // Clear
+  ctx.fillStyle = '#222';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Draw fallback circle on left
+  log('Drawing fallback circle at (100, 100)...');
+  ctx.fillStyle = '#666';
+  ctx.beginPath();
+  ctx.arc(100, 100, 30, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.fillText('Fallback', 85, 105);
+  
+  // Try to draw sprite on right
+  log('Drawing sprite at (300, 100)...');
+  SL.drawSprite(ctx, 'rat', 300, 100, 30, (c, x, y, s) => {
+    log('  → Fallback function called!');
+    c.fillStyle = 'red';
+    c.beginPath();
+    c.arc(x, y, s, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = '#fff';
+    c.fillText('Fallback', x - 20, y + 5);
+  });
+  
+  log('Draw complete!');
+  
+} catch (err) {
+  log(`✗ Error: ${err.message}`);
+  log(err.stack);
+}
+</script>
+</body>
+</html>
