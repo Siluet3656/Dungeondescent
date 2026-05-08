@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dungeon's Descent</title>
+<style>
+/* ── Reset ──────────────────────────────────────────────────────── */
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e0d8c8;font-family:monospace;
+     overflow:hidden;user-select:none;height:100vh;width:100vw}
+#app{width:100vw;height:100vh;position:relative}
+
+/* ── Lobby ──────────────────────────────────────────────────────── */
+#lobby{position:absolute;inset:0;background:#0a0a0f;display:flex;
+       flex-direction:column;align-items:center;gap:12px;z-index:20;
+       overflow-y:auto;padding:16px}
+#lobby h1{font-size:24px;color:#fa8;letter-spacing:3px;flex-shrink:0}
+.panel{background:#111118;border:1px solid #2a2a3a;border-radius:8px;
+       padding:12px;width:600px;flex-shrink:0}
+.panel h3{color:#8cf;font-size:12px;margin-bottom:8px;
+          border-bottom:1px solid #2a2a3a;padding-bottom:5px}
+
+/* Spellbook / hotbar grids */
+#spellbook-grid,#hotbar-slots{display:grid;grid-template-columns:repeat(4,1fr);
+                               gap:6px;margin-bottom:8px}
+.spell-card{border:1px solid #333;border-radius:5px;padding:7px;cursor:pointer;
+            font-size:10px;text-align:center;transition:border-color .15s,background .15s}
+.spell-card:hover{border-color:#8cf;background:#1a1a2a}
+.spell-card.equipped{border-color:#fa8;background:#1a1208}
+.spell-card.slot{border:1px dashed #333;border-radius:5px;padding:7px;color:#555;
+                 min-height:56px;display:flex;flex-direction:column;
+                 align-items:center;justify-content:center;cursor:pointer}
+.spell-card.slot.filled{border-color:#fa8;color:#eee}
+.spell-card.slot:hover{border-color:#8cf}
+.spell-icon{font-size:16px;margin-bottom:2px}
+.spell-name{font-size:10px;font-weight:bold;color:#ddd}
+.spell-info{font-size:9px;color:#888;margin-top:1px}
+
+/* Start button */
+.start-btn{padding:9px 28px;background:#222;border:1px solid #fa8;color:#fa8;
+           font-family:monospace;font-size:13px;cursor:pointer;
+           border-radius:6px;flex-shrink:0;margin-bottom:8px}
+.start-btn:hover{background:#2a1a08}
+
+/* Skill tree */
+.tier-header{display:flex;align-items:center;gap:8px;margin-bottom:6px;margin-top:10px}
+.tier-label{font-size:11px;font-weight:bold;padding:2px 8px;
+            border-radius:10px;border:1px solid}
+.tier-label.t1{color:#8a8;border-color:#4a4;background:rgba(60,120,60,.15)}
+.tier-label.t2{color:#88c;border-color:#44a;background:rgba(60,60,140,.15)}
+.tier-label.t3{color:#c84;border-color:#a62;background:rgba(140,80,20,.15)}
+.tier-label.t4{color:#f84;border-color:#c42;background:rgba(160,40,10,.15)}
+.tier-label.locked{color:#555;border-color:#333;background:none}
+.tier-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:4px}
+.tier-row.tier-locked{opacity:.35;pointer-events:none}
+.sk-node{border:1px solid #333;border-radius:5px;padding:7px;cursor:pointer;
+         transition:border-color .2s,background .2s}
+.sk-node:hover{border-color:#8af;background:#1a1a2a}
+.sk-node.maxed{border-color:#6a4;background:rgba(80,160,60,.1);cursor:default}
+.sk-node h4{font-size:10px;color:#ddd;margin-bottom:2px}
+.sk-node p{font-size:9px;color:#888}
+.sk-node .pts{font-size:9px;color:#fa8;margin-top:3px}
+
+/* Class selector */
+.class-selector{display:flex;gap:12px;margin:8px 0}
+.class-btn{padding:6px 16px;background:#1a1a2a;border:1px solid #444;color:#ddd;
+           border-radius:5px;cursor:pointer;font-family:monospace;font-size:12px}
+.class-btn.active{background:#2a1a08;border-color:#fa8;color:#fa8}
+
+/* ── Map screen ─────────────────────────────────────────────────── */
+#map-screen{position:absolute;inset:0;background:#0a0a0f;display:none;
+            flex-direction:column;align-items:center;justify-content:center;z-index:15}
+#map-screen h2{color:#fa8;font-size:15px;margin-bottom:12px}
+#node-map-wrap{position:relative;width:760px;height:320px}
+svg#map-lines{position:absolute;inset:0;pointer-events:none}
+#node-map{position:absolute;inset:0}
+.map-node{position:absolute;width:50px;height:50px;border-radius:50%;
+          border:2px solid #444;display:flex;flex-direction:column;
+          align-items:center;justify-content:center;font-size:10px;
+          transform:translate(-50%,-50%);z-index:2}
+.map-node.available{border-color:#8cf;cursor:pointer}
+.map-node.available:hover{background:#1a2a3a;border-color:#aef}
+.map-node.done{border-color:#4a4;opacity:.6;cursor:default}
+.map-node.locked{opacity:.35;cursor:default}
+.map-node .ntype{font-size:16px}
+.map-node .nlabel{font-size:8px;color:#aaa;margin-top:1px}
+
+/* ── Game screen (canvas + HUD) ─────────────────────────────────── */
+#game{position:absolute;inset:0;display:none;flex-direction:column}
+
+/* Topbar */
+#topbar{display:flex;align-items:center;gap:8px;padding:4px 10px;
+        background:#111118;border-bottom:1px solid #2a2a3a;
+        font-size:11px;flex-shrink:0}
+#canvas-wrap{flex:1;position:relative;overflow:hidden}
+canvas#c{display:block}
+
+/* Bottom HUD */
+#ui-bottom{background:rgba(8,8,16,.97);border-top:1px solid #2a2a3a;
+           padding:5px 10px;flex-shrink:0}
+#hotbar-game{display:flex;gap:6px;justify-content:center;margin-bottom:4px}
+.ability{width:52px;height:52px;border:2px solid #444;border-radius:5px;
+         position:relative;cursor:pointer;display:flex;flex-direction:column;
+         align-items:center;justify-content:center;gap:1px;overflow:hidden}
+.ability.ready{border-color:#6af}
+.ability.oncooldown{border-color:#333}
+.ability .key{position:absolute;top:2px;left:3px;font-size:8px;color:#888;z-index:1}
+.ability .icon{font-size:17px;z-index:1}
+.ability .aname{font-size:8px;color:#aaa;z-index:1}
+.ability .cdtxt{position:absolute;font-size:11px;font-weight:bold;color:#fa8;z-index:2}
+.cd-overlay{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.72);
+            border-radius:0 0 3px 3px}
+
+/* Stat bars */
+#statsbar{display:flex;gap:10px;align-items:center;font-size:10px;flex-wrap:wrap}
+.bar-wrap{display:flex;align-items:center;gap:4px}
+.bar{height:9px;border-radius:4px;background:#222;overflow:hidden;width:80px}
+.bar-fill{height:100%;border-radius:4px}
+#gcd-bar-wrap{display:flex;align-items:center;gap:4px;margin-left:auto}
+#gcd-bar{height:4px;border-radius:2px;background:#333;width:70px;overflow:hidden}
+#gcd-fill{height:100%;background:#fa8}
+
+/* Target frame */
+#target-frame{position:absolute;top:6px;left:50%;transform:translateX(-50%);
+              background:rgba(0,0,0,.85);border:1px solid #666;border-radius:5px;
+              padding:5px 10px;min-width:150px;font-size:10px;display:none;
+              pointer-events:none}
+#target-frame .tname{color:#fa8;font-weight:bold;margin-bottom:2px}
+
+/* Message log */
+#msgbox{position:absolute;bottom:6px;left:8px;font-size:10px;color:#aaa;
+        pointer-events:none;line-height:1.5}
+
+/* Minimap */
+.minimap{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);
+         border:1px solid #333;border-radius:3px}
+
+/* ── Overlays (shared) ──────────────────────────────────────────── */
+.overlay{position:absolute;inset:0;background:rgba(0,0,0,.92);display:none;
+         flex-direction:column;align-items:center;justify-content:center;
+         gap:12px;z-index:10;padding:20px}
+.overlay h3{color:#fa8;font-size:15px;text-align:center}
+
+/* Encounter */
+.enc-choice{padding:7px 18px;background:#1a1a2a;border:1px solid #8cf;color:#8cf;
+            font-family:monospace;font-size:11px;cursor:pointer;border-radius:4px;
+            min-width:200px;text-align:center}
+.enc-choice:hover{background:#1a2a3a}
+#enc-result{display:none;flex-direction:column;align-items:center;gap:10px;margin-top:4px}
+#enc-result .enc-res-text{font-size:13px;color:#8cf;text-align:center;padding:8px 16px;
+                          background:#111;border:1px solid #2a2a3a;border-radius:6px;
+                          max-width:300px}
+
+/* Result overlay */
+#result-overlay{position:absolute;inset:0;background:rgba(0,0,0,.92);display:none;
+                flex-direction:column;align-items:center;justify-content:center;
+                gap:12px;z-index:20}
+#result-overlay h2{font-size:22px}
+#result-overlay p{color:#aaa;font-size:12px;text-align:center;
+                  max-width:320px;white-space:pre-wrap}
+
+/* Buttons */
+.rbtn{padding:7px 22px;background:#222;border:1px solid #555;color:#eee;
+      font-family:monospace;font-size:12px;cursor:pointer;border-radius:4px}
+.rbtn:hover{background:#333}
+.rbtn.danger{border-color:#a33;color:#f88}
+.rbtn.danger:hover{background:#2a1010}
+
+/* Loot overlay */
+#loot-overlay{z-index:15}
+#loot-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:420px}
+.loot-card{border:1px solid #444;border-radius:6px;padding:10px;cursor:pointer;
+           font-size:11px;text-align:center;
+           transition:border-color .15s,box-shadow .15s}
+.loot-card:hover{border-color:#fa8;box-shadow:0 0 8px rgba(255,170,80,.3)}
+.loot-card.common  {border-color:#555;color:#bbb}
+.loot-card.uncommon{border-color:#4a8;color:#4d8}
+.loot-card.rare    {border-color:#46f;color:#68f}
+.loot-card.epic    {border-color:#a46;color:#c6a}
+
+/* Shop overlay */
+#store-overlay{z-index:15}
+#store-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:440px}
+.store-card{border:1px solid #444;border-radius:6px;padding:10px;font-size:11px;
+            text-align:center;transition:border-color .15s}
+.store-card.available{cursor:pointer}
+.store-card.available:hover{border-color:#fc6;background:#1a1400}
+.store-card.sold{opacity:.4;cursor:default}
+.store-card.common  {border-color:#555;color:#bbb}
+.store-card.uncommon{border-color:#4a8;color:#4d8}
+.store-card.rare    {border-color:#46f;color:#68f}
+.store-card.epic    {border-color:#a46;color:#c6a}
+
+/* Pause overlay */
+#pause-overlay{position:absolute;inset:0;background:rgba(0,0,0,.85);display:none;
+               flex-direction:column;align-items:center;justify-content:center;
+               gap:12px;z-index:30}
+#pause-overlay h2{color:#fa8;font-size:20px;letter-spacing:2px}
+.pause-sep{width:200px;height:1px;background:#2a2a3a;margin:2px 0}
+
+/* Inventory overlay */
+#inv-overlay{z-index:15}
+#inv-list{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;
+          width:460px;max-height:300px;overflow-y:auto}
+.inv-item{border:1px solid #333;border-radius:5px;padding:8px;
+          font-size:10px;text-align:center}
+.inv-item.common  {border-color:#555;color:#bbb}
+.inv-item.uncommon{border-color:#4a8;color:#4d8}
+.inv-item.rare    {border-color:#46f;color:#68f}
+.inv-item.epic    {border-color:#a46;color:#c6a}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       LOBBY
+  ════════════════════════════════════════════════════════════════ -->
+  <div id="lobby">
+    <h1>⚔ DUNGEON'S DESCENT</h1>
+
+    <div class="panel">
+      <h3>Class</h3>
+      <div class="class-selector">
+        <button id="class-warrior" class="class-btn active">⚔ Warrior</button>
+        <button id="class-mage"    class="class-btn">🔮 Mage</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Spellbook — click to equip/unequip (4 slots)</h3>
+      <div id="spellbook-grid"></div>
+      <h3 style="margin-top:6px">Hotbar</h3>
+      <div id="hotbar-slots"></div>
+      <div style="font-size:9px;color:#555">
+        Auto-Attack (melee, auto) and Dash (Space) always available
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Skill Tree — Points persist · Tiers unlock by defeating bosses</h3>
+      <div id="lobby-sp"        style="font-size:10px;color:#fa8;margin-bottom:6px"></div>
+      <div id="lobby-tier-info" style="font-size:10px;color:#888;margin-bottom:10px"></div>
+      <div id="skilltree-panel"></div>
+      <div style="font-size:10px;color:#fc6;margin-top:8px">
+        Ascension: <span id="ascension-lvl">0</span>
+      </div>
+    </div>
+
+    <button id="start-btn" class="start-btn">Enter Dungeon →</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       MAP SCREEN
+  ════════════════════════════════════════════════════════════════ -->
+  <div id="map-screen">
+    <h2>⚔ Choose Your Path</h2>
+    <div id="node-map-wrap">
+      <svg id="map-lines" width="760" height="320"></svg>
+      <div id="node-map"></div>
+    </div>
+    <div style="font-size:10px;color:#555;margin-top:10px">
+      ⚔ Combat · ? Event · 🏪 Shop · 💀 Boss
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       GAME SCREEN  (canvas + HUD + all in-battle overlays)
+  ════════════════════════════════════════════════════════════════ -->
+  <div id="game">
+
+    <!-- Topbar -->
+    <div id="topbar">
+      <span id="floor-label"     style="color:#fa8;font-weight:bold">Node</span>
+      <span id="level-label">Lv.1</span>
+      <span id="gold-label"      style="color:#fc6">0g</span>
+      <span id="sp-label"        style="color:#8cf">0 SP</span>
+      <span id="node-type-label" style="color:#aaa;font-size:10px"></span>
+      <div style="margin-left:auto;display:flex;gap:6px">
+        <button id="btn-inv"
+          style="padding:2px 7px;background:#222;border:1px solid #555;
+                 color:#8cf;font-family:monospace;font-size:10px;
+                 cursor:pointer;border-radius:3px">Items(I)</button>
+        <button id="btn-pause"
+          style="padding:2px 7px;background:#222;border:1px solid #555;
+                 color:#fa8;font-family:monospace;font-size:10px;
+                 cursor:pointer;border-radius:3px">Menu(P)</button>
+      </div>
+    </div>
+
+    <!-- Canvas area + all overlays anchored inside it -->
+    <div id="canvas-wrap">
+      <canvas id="c"></canvas>
+      <canvas id="mm" class="minimap" width="80" height="80"></canvas>
+
+      <!-- Target frame -->
+      <div id="target-frame">
+        <div class="tname" id="tname">-</div>
+        <div class="bar" style="width:140px">
+          <div class="bar-fill" id="thp-fill"
+               style="background:#c44;width:100%"></div>
+        </div>
+        <div id="thp-txt" style="font-size:9px;color:#aaa;margin-top:2px"></div>
+      </div>
+
+      <!-- Message log -->
+      <div id="msgbox"></div>
+
+      <!-- Encounter overlay -->
+      <div id="enc-overlay" class="overlay">
+        <h3 id="enc-title"></h3>
+        <p  id="enc-desc"
+            style="color:#bbb;font-size:12px;text-align:center;
+                   max-width:340px;line-height:1.6"></p>
+        <div id="enc-choices"
+             style="display:flex;flex-direction:column;gap:8px"></div>
+        <div id="enc-result">
+          <div class="enc-res-text" id="enc-res-text"></div>
+          <button id="enc-continue-btn" class="rbtn">Continue →</button>
+        </div>
+      </div>
+
+      <!-- Loot overlay -->
+      <div id="loot-overlay" class="overlay">
+        <h3>Choose a Reward</h3>
+        <p style="color:#888;font-size:11px">Pick one item</p>
+        <div id="loot-grid"></div>
+      </div>
+
+      <!-- Shop overlay -->
+      <div id="store-overlay" class="overlay">
+        <h3>🏪 Item Store</h3>
+        <div id="store-gold-display"
+             style="color:#fc6;font-size:13px;font-weight:bold"></div>
+        <div id="store-grid"></div>
+        <button id="store-close-btn" class="rbtn"
+                style="margin-top:8px">Leave Store</button>
+      </div>
+
+      <!-- Inventory overlay -->
+      <div id="inv-overlay" class="overlay" style="z-index:15">
+        <h3 style="color:#8cf">Inventory</h3>
+        <div id="inv-list"></div>
+        <button id="inv-close-btn" class="rbtn"
+                style="margin-top:6px">Close</button>
+      </div>
+
+      <!-- Result overlay (win / death) -->
+      <div id="result-overlay">
+        <h2 id="res-title"></h2>
+        <p  id="res-desc"></p>
+        <div id="res-btns"
+             style="display:flex;gap:10px;flex-wrap:wrap;
+                    justify-content:center"></div>
+      </div>
+
+      <!-- Pause overlay -->
+      <div id="pause-overlay">
+        <h2>PAUSED</h2>
+        <div class="pause-sep"></div>
+        <button id="btn-resume" class="rbtn">▶ Resume</button>
+        <div class="pause-sep"></div>
+        <div style="color:#666;font-size:10px;text-align:center;line-height:1.8">
+          WASD/Arrows — Move · 1-4 — Spells<br>
+          Space — Dash · Tab — Target · LMB — Click target<br>
+          I — Inventory · P/Esc — Pause
+        </div>
+        <div class="pause-sep"></div>
+        <button id="btn-surrender" class="rbtn danger">⚑ Surrender</button>
+      </div>
+
+    </div><!-- /canvas-wrap -->
+
+    <!-- Bottom HUD -->
+    <div id="ui-bottom">
+      <div id="hotbar-game"></div>
+      <div id="statsbar">
+        <div class="bar-wrap">
+          <span style="color:#c66">HP</span>
+          <div class="bar">
+            <div class="bar-fill" id="hp-fill" style="background:#c44"></div>
+          </div>
+          <span id="hp-txt"></span>
+        </div>
+        <div class="bar-wrap">
+          <span style="color:#66c">MP</span>
+          <div class="bar">
+            <div class="bar-fill" id="mp-fill" style="background:#46c"></div>
+          </div>
+          <span id="mp-txt"></span>
+        </div>
+        <div class="bar-wrap">
+          <span style="color:#8a4">XP</span>
+          <div class="bar">
+            <div class="bar-fill" id="xp-fill" style="background:#6a3"></div>
+          </div>
+          <span id="xp-txt"></span>
+        </div>
+        <div id="gcd-bar-wrap">
+          <span style="color:#fa8;font-size:9px">GCD</span>
+          <div id="gcd-bar">
+            <div id="gcd-fill" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /game -->
+
+</div><!-- /app -->
+
+<!-- ═══════════════════════════════════════════════════════════════
+     BOOTSTRAP  —  all module wiring in one place
+════════════════════════════════════════════════════════════════ -->
+<script type="module">
+import * as GS           from './GameState.js';
+import * as DC           from './DataConfig.js';
+import * as InputManager from './InputManager.js';
+import * as CM           from './CombatManager.js';
+import * as UI           from './UIManager.js';
+import * as MapManager   from './MapManager.js';
+import * as LobbyManager from './LobbyManager.js';
+import * as RenderEngine from './RenderEngine.js';
+
+// ── 1. Grab canvases ────────────────────────────────────────────
+const canvas  = document.getElementById('c');
+const minimap = document.getElementById('mm');
+
+// ── 2. Initialise every module ──────────────────────────────────
+GS.load();                      // restore cross-run persist from localStorage
+
+RenderEngine.init(canvas, minimap);
+
+UI.init();
+
+InputManager.init(canvas, {
+  isBattleRunning: () => GS.battle.running,
+  isPaused:        () => GS.battle.paused,
+});
+
+MapManager.init(canvas);
+LobbyManager.init(canvas);
+
+// ── 3. Topbar button wiring ─────────────────────────────────────
+document.getElementById('btn-inv').addEventListener('click', () => {
+  MapManager.openInventory();
+});
+document.getElementById('btn-pause').addEventListener('click', () => {
+  CM.openPause();
+});
+document.getElementById('btn-resume').addEventListener('click', () => {
+  CM.closePause();
+});
+document.getElementById('btn-surrender').addEventListener('click', () => {
+  CM.surrender();
+});
+
+// ── 4. InputManager action dispatch ────────────────────────────
+document.addEventListener('game:action', e => {
+  const { action, slot, x, y } = e.detail;
+  switch (action) {
+    case 'castSpell':    CM.castSpell(slot);         break;
+    case 'dash':         CM.doDash();                break;
+    case 'cycleTarget':  CM.cycleTarget();           break;
+    case 'clickEnemy':   CM.handleClick(x, y);       break;
+    case 'togglePause':  CM.togglePause();           break;
+    case 'openInventory':MapManager.openInventory(); break;
+  }
+});
+
+// ── 5. LobbyManager startRun bridge ────────────────────────────
+//  LobbyManager calls GS.startRun() then fires this event so MapManager
+//  generates the map and shows the map screen.
+document.addEventListener('lobby:runStarted', () => {
+  const nodes = MapManager.generateMap();
+  GS.setMapNodes(nodes);
+  MapManager.enterMap();
+});
+
+// ── 6. Post-lobby navigation ────────────────────────────────────
+//  MapManager fires 'nav:goLobbyReady' when it has finished tearing
+//  down run state; we show the lobby here instead of MapManager importing
+//  LobbyManager (which would create a circular dep).
+document.addEventListener('nav:goLobbyReady', () => {
+  document.getElementById('lobby').style.display = 'flex';
+  LobbyManager.buildLobby();
+});
+
+// ── 7. Hotbar build ─────────────────────────────────────────────
+//  Rebuild the in-battle hotbar whenever a new battle starts.
+document.addEventListener('combat:battleStarted', () => {
+  LobbyManager.buildHotbar(slot => CM.castSpell(slot));
+  UI.resetHUD();
+});
+</script>
+</body>
+</html>
