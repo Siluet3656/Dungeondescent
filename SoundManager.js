@@ -262,3 +262,30 @@ export function clearCache() {
   _loadStatus.clear();
   _initialized = false;
 }
+
+/**
+* Unlock the browser's audio subsystem after a user gesture.
+ * Call this inside the first click handler (e.g., "Enter Dungeon" button).
+ */
+export function unlockAudio() {
+  // Create a short-lived AudioContext to mark the document as user‑activated.
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return;
+
+  const ctx = new AudioContext();
+  // Create an empty 1‑sample buffer – does nothing but tells the browser
+  // that audio is user‑initiated.
+  const buffer = ctx.createBuffer(1, 1, 22050);
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(ctx.destination);
+  source.start(0);
+  source.onended = () => ctx.close();
+
+  // Some browsers also require a “real” audio element play.
+  try {
+    const dummy = new Audio();
+    dummy.volume = 0;
+    dummy.play().catch(() => {});
+  } catch (_) { /* ignore */ }
+}

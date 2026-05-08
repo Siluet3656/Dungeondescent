@@ -363,15 +363,17 @@ function _startCombat(node) {
   _hide('map-screen');
   _show('game');
 
-  // Resize canvas to container before battle starts
-  const wrap = $('canvas-wrap');
-  if (wrap && _canvas) {
-    _canvas.width  = wrap.clientWidth;
-    _canvas.height = wrap.clientHeight;
-  }
-
   UI.setNodeTypeLabel(node.type === 'boss' ? '★ BOSS BATTLE' : '⚔ Combat');
-  CM.startBattle(node, _canvas);
+
+  // Wait for flex layout to settle, then resize the canvas
+  requestAnimationFrame(() => {
+    const wrap = document.getElementById('canvas-wrap');
+    if (wrap && _canvas) {
+      _canvas.width  = wrap.clientWidth;
+      _canvas.height = wrap.clientHeight;
+    }
+    CM.startBattle(node, _canvas);
+  });
 }
 
 /** Start camp node — counts as instant clear, returns to reachable successors. */

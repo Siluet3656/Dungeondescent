@@ -430,13 +430,12 @@ const canvas  = document.getElementById('c');
 const minimap = document.getElementById('mm');
 
 // ── 2. Initialise every module ──────────────────────────────────
+await Promise.all([
+  SpriteLoader.init(),
+  SoundManager.init()
+]).catch(err => console.warn('Asset loading error:', err));
+
 GS.load();                      // restore cross-run persist from localStorage
-
-// Initialize sprite loader (non-blocking, falls back gracefully)
-SpriteLoader.init().catch(err => console.warn('[SpriteLoader] Init failed:', err));
-
-// Initialize sound manager (non-blocking, falls back to silence)
-SoundManager.init().catch(err => console.warn('[SoundManager] Init failed:', err));
 
 RenderEngine.init(canvas, minimap);
 
