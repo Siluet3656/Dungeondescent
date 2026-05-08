@@ -144,6 +144,6 @@ html = html.replace('</body>', `<script>\n${bundle}\n</script>\n</body>`);
 
 // ----- 6. WRITE single file -----
 if (!fs.existsSync('dist')) fs.mkdirSync('dist');
-fs.writeFileSync('dist/game.html', html);
+fs.writeFileSync('dist/index.html', html);
 
-console.log('✅ dist/game.html ready for itch.io!');
+console.log('✅ dist/index.html ready for itch.io!');
