@@ -1,33 +1,84 @@
->> How to run it <<
-Because the game uses ES modules (type="module"), browsers block module imports from file:// URLs. You need a local HTTP server. Pick whichever is easiest:
-VS Code — install the Live Server extension, right-click index.html → Open with Live Server. Done.
+## How to Run
 
-Python (if you have it installed):
-bashcd dungeon-descent
-python -m http.server 8080
-# then open http://localhost:8080
+Because the game uses ES modules (`type="module"`), browsers block module imports from `file://` URLs.  
+You need to run the project through a local HTTP server.
 
-Node:
-bashcd dungeon-descent
-npx serve .
-# then open the URL it prints
+Choose any option below:
 
->> Как запустить <<
+### VS Code (recommended)
 
-Поскольку в игре используются ES-модули (type="module"), браузеры блокируют импорт модулей из локальных файлов (по протоколу file://). Вам потребуется локальный HTTP-сервер. Выберите самый удобный способ:
+Install the **Live Server** extension, then:
 
-VS Code — установите расширение Live Server, нажмите правой кнопкой мыши на index.html → «Open with Live Server». Готово.
+1. Open the project folder
+2. Right-click `index.html`
+3. Select **Open with Live Server**
 
-Python (если он установлен):
-bash
+Done.
 
+### Python
+
+If Python is installed:
+
+```bash
 cd dungeon-descent
 python -m http.server 8080
-# затем откройте http://localhost:8080
+```
 
-Node.js:
-bash
+Then open:
 
+```text
+http://localhost:8080
+```
+
+### Node.js
+
+```bash
 cd dungeon-descent
 npx serve .
-# затем откройте URL, который появится в консоли
+```
+
+Then open the URL shown in the terminal.
+
+---
+
+## Как запустить
+
+Поскольку игра использует ES-модули (`type="module"`), браузеры блокируют импорт модулей через `file://`.
+
+Поэтому проект нужно запускать через локальный HTTP-сервер.
+
+Выберите любой удобный вариант:
+
+### VS Code (рекомендуется)
+
+Установите расширение **Live Server**, затем:
+
+1. Откройте папку проекта
+2. Нажмите правой кнопкой мыши на `index.html`
+3. Выберите **Open with Live Server**
+
+Готово.
+
+### Python
+
+Если Python установлен:
+
+```bash
+cd dungeon-descent
+python -m http.server 8080
+```
+
+После этого откройте:
+
+```text
+http://localhost:8080
+```
+
+### Node.js
+
+```bash
+cd dungeon-descent
+npx serve .
+```
+
+Затем откройте URL, который появится в терминале.
