@@ -422,6 +422,8 @@ import * as UI           from './UIManager.js';
 import * as MapManager   from './MapManager.js';
 import * as LobbyManager from './LobbyManager.js';
 import * as RenderEngine from './RenderEngine.js';
+import * as SpriteLoader from './SpriteLoader.js';
+import * as SoundManager from './SoundManager.js';
 
 // ── 1. Grab canvases ────────────────────────────────────────────
 const canvas  = document.getElementById('c');
@@ -429,6 +431,12 @@ const minimap = document.getElementById('mm');
 
 // ── 2. Initialise every module ──────────────────────────────────
 GS.load();                      // restore cross-run persist from localStorage
+
+// Initialize sprite loader (non-blocking, falls back gracefully)
+SpriteLoader.init().catch(err => console.warn('[SpriteLoader] Init failed:', err));
+
+// Initialize sound manager (non-blocking, falls back to silence)
+SoundManager.init().catch(err => console.warn('[SoundManager] Init failed:', err));
 
 RenderEngine.init(canvas, minimap);
 
