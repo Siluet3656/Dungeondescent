@@ -54,6 +54,7 @@ import * as GS          from './GameState.js';
 import * as DC          from './DataConfig.js';
 import * as InputManager from './InputManager.js';
 import { rollItems }    from './DataConfig.js';
+import * as SM          from './SoundManager.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTS
