@@ -35,6 +35,7 @@
 import * as GS   from './GameState.js';
 import * as DC   from './DataConfig.js';
 import * as CM   from './CombatManager.js';
+import * as SM 	 from './SoundManager.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DOM HELPERS
@@ -262,6 +263,7 @@ export function startRun() {
     return;
   }
 
+  SM.unlockAudio();
   GS.startRun();
 
   // Generate map and store it in GameState

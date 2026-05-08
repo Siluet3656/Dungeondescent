@@ -163,8 +163,8 @@ export function isInitialized() {
  */
 export function drawSprite(ctx, key, x, y, size, fallbackFn) {
   const sprite = _sprites.get(key);
-  
-  if (sprite && _loadStatus.get(key) === true) {
+
+  if (sprite && _loadStatus.get(key) === true && sprite.complete && sprite.naturalWidth > 0) {
     const diameter = size * 2;
     ctx.save();
     ctx.imageSmoothingEnabled = true;
