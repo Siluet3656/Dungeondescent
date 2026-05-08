@@ -1,12 +1,12 @@
 from PIL import Image
 
 def create_enemy_sprite(filename, color, size=32):
-    """Create a simple enemy sprite with given color"""
+    """Create a simple enemy sprite with solid color and outline"""
     img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
     pixels = img.load()
     
     center = size // 2
-    radius = size // 2 - 1
+    radius = size // 2 - 2
     
     # Parse hex color (handle both #rgb and #rrggbb)
     if len(color) == 4:
@@ -21,11 +21,16 @@ def create_enemy_sprite(filename, color, size=32):
     for y in range(size):
         for x in range(size):
             dist = ((x - center) ** 2 + (y - center) ** 2) ** 0.5
-            if dist < radius:
-                alpha = int(255 * (1 - dist / radius))
-                pixels[x, y] = (r, g, b, alpha)
+            
+            if dist < radius - 1:
+                # Solid inner circle
+                pixels[x, y] = (r, g, b, 255)
+            elif dist < radius:
+                # Slightly lighter edge
+                pixels[x, y] = (min(r+40, 255), min(g+40, 255), min(b+40, 255), 255)
             elif dist < radius + 1:
-                pixels[x, y] = (min(r+50, 255), min(g+50, 255), min(b+50, 255), 200)
+                # Dark outline
+                pixels[x, y] = (max(r-80, 0), max(g-80, 0), max(b-80, 0), 255)
     
     img.save(f'/workspace/Resources/Sprites/{filename}')
     print(f"Created: {filename}")
