@@ -659,6 +659,7 @@ export function doDash() {
   dashActive        = DASH_DURATION;
   dashTimer         = DASH_CD;
   player.invincible = 0.3;
+  SM.play('dash');
   _addMsg('Dash!');
 }
 
@@ -684,6 +685,7 @@ export function castSpell(slot) {
   if (sp.type === 'heal') {
     const h = ~~(20 + player.stats.magic * sp.healMult);
     player.hp = Math.min(player.stats.maxHp, player.hp + h);
+    SM.play('spell_heal');
     _spawnFT(player.x, player.y, '#4d8', `+${h}`);
     _addMsg(`${sp.name}: +${h}`);
     return;
@@ -692,6 +694,7 @@ export function castSpell(slot) {
   // Shield
   if (sp.type === 'shield') {
     player.shield = (player.shield || 0) + sp.shieldAmt;
+    SM.play('spell_shield');
     _spawnFT(player.x, player.y, '#8cf', `🛡+${sp.shieldAmt}`);
     _addMsg(sp.name);
     return;
@@ -703,6 +706,11 @@ export function castSpell(slot) {
     : (target && hasLOS(player.x, player.y, target.x, target.y) ? [target] : []);
 
   if (!tgts.length) { _addMsg('No target in sight!'); return; }
+
+  // Play spell sound based on type
+  if (sp.id === 'fireball') SM.play('spell_fireball');
+  else if (sp.id === 'frostbolt') SM.play('spell_drain');
+  else if (sp.id === 'drain') SM.play('spell_drain');
 
   tgts.forEach(e => {
     if (!hasLOS(player.x, player.y, e.x, e.y)) return;
@@ -752,6 +760,10 @@ function _killEnemy(e) {
     }
   }
 
+  // Play enemy death sound
+  if (e.boss) SM.play('boss_roar');
+  else SM.play('enemy_death');
+
   // XP and gold are committed through GameState so persist stays in sync
   const goldEarned = Math.floor(e.gold);
   GS.addGold(goldEarned);
@@ -765,6 +777,7 @@ function _killEnemy(e) {
   player.skillPoints = GS.run.playerPersist.skillPoints;
   if (levelsGained > 0) {
     player.hp = Math.min(player.stats.maxHp, player.hp + 15 * levelsGained);
+    SM.play('level_up');
     _addMsg(`Level Up! Lv.${newLevel} +${levelsGained} SP`);
   }
 
@@ -789,6 +802,7 @@ function _applyDmgToPlayer(dmg, attacker = null) {
 
   if (dmg > 0) {
     player.hp -= dmg;
+    SM.play('hit');
     _spawnFT(player.x, player.y, '#f44', `-${~~dmg}`);
 
     // Ascension 3: random on-hit debuffs
@@ -909,6 +923,7 @@ function _showLootPick() {
       `<div style="font-size:10px;color:#888">${it.desc}</div>` +
       `<div style="font-size:9px;text-transform:uppercase;margin-top:2px">${it.rarity}</div>`;
     d.onclick = () => {
+      SM.play('item_pickup');
       GS.applyItem(it, null);
       document.getElementById('loot-overlay').style.display = 'none';
       document.dispatchEvent(new CustomEvent('nav:backToMap'));
