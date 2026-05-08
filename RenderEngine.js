@@ -33,6 +33,7 @@
  */
 
 import * as CM from './CombatManager.js';
+import * as SL from './SpriteLoader.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MODULE STATE
@@ -381,17 +382,22 @@ function _drawEnemies() {
       ctx.restore();
     }
 
-    // ── Body ─────────────────────────────────────────────────────
-    ctx.fillStyle = e.slow > 0 ? '#558' : e.color;
-    ctx.beginPath();
-    ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
-    ctx.fill();
-
-    if (e.boss) {
-      ctx.strokeStyle = '#f88';
-      ctx.lineWidth   = 2;
-      ctx.stroke();
-    }
+    // ── Body (sprite or fallback) ────────────────────────────────
+    const spriteKey = e.boss ? SL.SPRITE_KEYS.boss : SL.SPRITE_KEYS[e.type];
+    const baseColor = e.slow > 0 ? '#558' : e.color;
+    
+    SL.drawSprite(ctx, spriteKey, e.x, e.y, e.size, (drawCtx, dx, dy, dsize) => {
+      drawCtx.fillStyle = baseColor;
+      drawCtx.beginPath();
+      drawCtx.arc(dx, dy, dsize, 0, Math.PI * 2);
+      drawCtx.fill();
+      
+      if (e.boss) {
+        drawCtx.strokeStyle = '#f88';
+        drawCtx.lineWidth   = 2;
+        drawCtx.stroke();
+      }
+    });
 
     // ── HP bar ───────────────────────────────────────────────────
     // Stagger bars so they don't overlap when enemies cluster
@@ -434,11 +440,15 @@ function _drawPlayer() {
   const p      = CM.player;
   const dashing = CM.dashActive > 0;
 
-  // Body
-  ctx.fillStyle = dashing ? '#aef' : '#6af';
-  ctx.beginPath();
-  ctx.arc(p.x, p.y, 11, 0, Math.PI * 2);
-  ctx.fill();
+  // Body (sprite or fallback)
+  const spriteKey = dashing ? SL.SPRITE_KEYS.player_dash : SL.SPRITE_KEYS.player;
+  
+  SL.drawSprite(ctx, spriteKey, p.x, p.y, 11, (drawCtx, dx, dy, dsize) => {
+    drawCtx.fillStyle = dashing ? '#aef' : '#6af';
+    drawCtx.beginPath();
+    drawCtx.arc(dx, dy, dsize, 0, Math.PI * 2);
+    drawCtx.fill();
+  });
 
   // Shield ring — thicker and brighter when shield is active
   ctx.strokeStyle = (p.shield || 0) > 0 ? '#8cf' : '#adf';
@@ -473,10 +483,16 @@ function _drawParticles() {
   const ctx = _ctx;
   CM.particles.forEach(p => {
     ctx.globalAlpha = Math.max(0, p.life);
-    ctx.fillStyle   = p.color;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-    ctx.fill();
+    
+    // Try to use particle sprite if available, otherwise fallback to circle
+    const spriteKey = p.type === 'heal' ? SL.SPRITE_KEYS.particle_heal : SL.SPRITE_KEYS.particle_hit;
+    
+    SL.drawSprite(ctx, spriteKey, p.x, p.y, p.r, (drawCtx, dx, dy, dr) => {
+      drawCtx.fillStyle = p.color;
+      drawCtx.beginPath();
+      drawCtx.arc(dx, dy, dr, 0, Math.PI * 2);
+      drawCtx.fill();
+    });
   });
   ctx.globalAlpha = 1;
 }
