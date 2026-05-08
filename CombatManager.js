@@ -736,6 +736,8 @@ function _dealDmg(e, dmg, color) {
   e.hp    -= dmg;
   e.aggro  = true;
   _spawnFT(e.x, e.y, color, `-${~~dmg}`);
+  // Play hit sound
+  SM.play('hit');
   if (e.hp <= 0) _killEnemy(e);
 }
 
