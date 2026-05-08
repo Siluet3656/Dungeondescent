@@ -106,6 +106,7 @@ async function _loadSprite(key, url) {
     img.onload = () => {
       _sprites.set(key, img);
       _loadStatus.set(key, true);
+      console.log(`[SpriteLoader] Loaded: ${key} (${img.width}x${img.height})`);
       resolve(img);
     };
     
@@ -115,7 +116,8 @@ async function _loadSprite(key, url) {
       resolve(null);
     };
     
-    img.src = url;
+    // Add cache-busting parameter to force reload
+    img.src = url + '?v=' + Date.now();
   });
 }
 
@@ -165,6 +167,8 @@ export function drawSprite(ctx, key, x, y, size, fallbackFn) {
   if (sprite && _loadStatus.get(key) === true) {
     const diameter = size * 2;
     ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(
       sprite,
       Math.floor(x - diameter / 2),
