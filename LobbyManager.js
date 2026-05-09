@@ -674,6 +674,7 @@ export function buildHotbar(onSpellClick) {
       `<span class="key">${i + 1}</span>` +
       `<span class="icon">${sp ? sp.icon : '—'}</span>` +
       `<span class="aname">${sp ? sp.name : ''}</span>` +
+      `<span class="mpcost" id="mpcost${i}"></span>` +
       `<span class="cdtxt" id="cdtxt${i}"></span>` +
       `<div class="cd-overlay" id="cd${i}" style="height:0%"></div>`;
     hb.appendChild(d);
