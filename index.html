@@ -37,21 +37,78 @@ body{background:#0a0a0f;color:#e0d8c8;font-family:monospace;
 .spell-name{font-size:10px;font-weight:bold;color:#ddd}
 .spell-info{font-size:9px;color:#888;margin-top:1px}
 
-/* In-battle ability styling */
+/* Start button */
+.start-btn{padding:9px 28px;background:#222;border:1px solid #fa8;color:#fa8;
+           font-family:monospace;font-size:13px;cursor:pointer;
+           border-radius:6px;flex-shrink:0;margin-bottom:8px}
+.start-btn:hover{background:#2a1a08}
+
+/* Skill tree */
+.tier-header{display:flex;align-items:center;gap:8px;margin-bottom:6px;margin-top:10px}
+.tier-label{font-size:11px;font-weight:bold;padding:2px 8px;
+            border-radius:10px;border:1px solid}
+.tier-label.t1{color:#8a8;border-color:#4a4;background:rgba(60,120,60,.15)}
+.tier-label.t2{color:#88c;border-color:#44a;background:rgba(60,60,140,.15)}
+.tier-label.t3{color:#c84;border-color:#a62;background:rgba(140,80,20,.15)}
+.tier-label.t4{color:#f84;border-color:#c42;background:rgba(160,40,10,.15)}
+.tier-label.locked{color:#555;border-color:#333;background:none}
+.tier-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:4px}
+.tier-row.tier-locked{opacity:.35;pointer-events:none}
+.sk-node{border:1px solid #333;border-radius:5px;padding:7px;cursor:pointer;
+         transition:border-color .2s,background .2s}
+.sk-node:hover{border-color:#8af;background:#1a1a2a}
+.sk-node.maxed{border-color:#6a4;background:rgba(80,160,60,.1);cursor:default}
+.sk-node h4{font-size:10px;color:#ddd;margin-bottom:2px}
+.sk-node p{font-size:9px;color:#888}
+.sk-node .pts{font-size:9px;color:#fa8;margin-top:3px}
+
+/* Class selector */
+.class-selector{display:flex;gap:12px;margin:8px 0}
+.class-btn{padding:6px 16px;background:#1a1a2a;border:1px solid #444;color:#ddd;
+           border-radius:5px;cursor:pointer;font-family:monospace;font-size:12px}
+.class-btn.active{background:#2a1a08;border-color:#fa8;color:#fa8}
+
+/* ── Map screen ─────────────────────────────────────────────────── */
+#map-screen{position:absolute;inset:0;background:#0a0a0f;display:none;
+            flex-direction:column;align-items:center;justify-content:center;z-index:15}
+#map-screen h2{color:#fa8;font-size:15px;margin-bottom:12px}
+#node-map-wrap{position:relative;width:760px;height:320px}
+svg#map-lines{position:absolute;inset:0;pointer-events:none}
+#node-map{position:absolute;inset:0}
+.map-node{position:absolute;width:50px;height:50px;border-radius:50%;
+          border:2px solid #444;display:flex;flex-direction:column;
+          align-items:center;justify-content:center;font-size:10px;
+          transform:translate(-50%,-50%);z-index:2}
+.map-node.available{border-color:#8cf;cursor:pointer}
+.map-node.available:hover{background:#1a2a3a;border-color:#aef}
+.map-node.done{border-color:#4a4;opacity:.6;cursor:default}
+.map-node.locked{opacity:.35;cursor:default}
+.map-node .ntype{font-size:16px}
+.map-node .nlabel{font-size:8px;color:#aaa;margin-top:1px}
+
+/* ── Game screen (canvas + HUD) ─────────────────────────────────── */
+#game{position:absolute;inset:0;display:none;flex-direction:column}
+
+/* Topbar */
+#topbar{display:flex;align-items:center;gap:8px;padding:4px 10px;
+        background:#111118;border-bottom:1px solid #2a2a3a;
+        font-size:11px;flex-shrink:0}
+#canvas-wrap{flex:1;position:relative;overflow:hidden}
+canvas#c{display:block}
+
+/* Bottom HUD */
+#ui-bottom{background:rgba(8,8,16,.97);border-top:1px solid #2a2a3a;
+           padding:5px 10px;flex-shrink:0}
 #hotbar-game{display:flex;gap:6px;justify-content:center;margin-bottom:4px}
 .ability{width:52px;height:52px;border:2px solid #444;border-radius:5px;
          position:relative;cursor:pointer;display:flex;flex-direction:column;
          align-items:center;justify-content:center;gap:1px;overflow:hidden}
 .ability.ready{border-color:#6af}
 .ability.oncooldown{border-color:#333}
-.ability.unusable{filter:brightness(0.5)}
 .ability .key{position:absolute;top:2px;left:3px;font-size:8px;color:#888;z-index:1}
 .ability .icon{font-size:17px;z-index:1}
 .ability .aname{font-size:8px;color:#aaa;z-index:1}
 .ability .cdtxt{position:absolute;font-size:11px;font-weight:bold;color:#fa8;z-index:2}
-.ability .mpcost{font-size:8px;z-index:1}
-.ability .mpcost.enough{color:#4a4}
-.ability .mpcost.notenough{color:#c44}
 .cd-overlay{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.72);
             border-radius:0 0 3px 3px}
 

@@ -50,8 +50,6 @@ const AB = [];
 const CD = [];
 /** @type {HTMLElement[]} — cd text spans for slots 0–3 */
 const CDT = [];
-/** @type {HTMLElement[]} — mana cost text spans for slots 0–3 */
-const MPCOST = [];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // INIT
@@ -93,10 +91,9 @@ export function init() {
 /** Attempt to cache hotbar elements; safe to call multiple times. */
 function _cacheHotbarEls() {
   for (let i = 0; i < 4; i++) {
-    AB[i]     = document.getElementById(`ab${i}`)      || AB[i];
-    CD[i]     = document.getElementById(`cd${i}`)      || CD[i];
-    CDT[i]    = document.getElementById(`cdtxt${i}`)   || CDT[i];
-    MPCOST[i] = document.getElementById(`mpcost${i}`)  || MPCOST[i];
+    AB[i]  = document.getElementById(`ab${i}`)     || AB[i];
+    CD[i]  = document.getElementById(`cd${i}`)     || CD[i];
+    CDT[i] = document.getElementById(`cdtxt${i}`)  || CDT[i];
   }
 }
 
@@ -122,7 +119,6 @@ export function resetHUD() {
   for (let i = 0; i < 4; i++) {
     _setBarHeight(CD[i],  0);
     _setText(CDT[i], '');
-    _setText(MPCOST[i], '');
     if (AB[i]) AB[i].className = 'ability ready';
   }
   _setBarHeight(EL['cd-dash'], 0);
@@ -211,7 +207,6 @@ function _updateSpellCooldowns() {
   _cacheHotbarEls();
 
   const spells = GS.persist.equippedSpells;
-  const p = CM.player;
   for (let i = 0; i < 4; i++) {
     const id  = spells[i];
     const sp  = id ? DC.SPELL_BY_ID[id] : null;
@@ -222,30 +217,8 @@ function _updateSpellCooldowns() {
     _setBarHeight(CD[i],  pct);
     _setText(CDT[i], cd > 0 ? cd.toFixed(1) : '');
 
-    // Mana cost display and usability check
-    if (sp && MPCOST[i]) {
-      const mpCost = sp.mpCost || 0;
-      const canAfford = p && p.mp >= mpCost;
-      MPCOST[i].textContent = mpCost > 0 ? `${mpCost}mp` : '';
-      MPCOST[i].className = 'mpcost ' + (canAfford ? 'enough' : 'notenough');
-    } else if (MPCOST[i]) {
-      MPCOST[i].textContent = '';
-      MPCOST[i].className = 'mpcost';
-    }
-
-    // Determine ability state: on cooldown, unusable (no spell), or ready
     if (AB[i]) {
-      let className = 'ability ';
-      if (CM.gcd > 0 || cd > 0) {
-        className += 'oncooldown';
-      } else if (!sp) {
-        className += 'unusable';
-      } else if (p && p.mp < (sp.mpCost || 0)) {
-        className += 'unusable';
-      } else {
-        className += 'ready';
-      }
-      AB[i].className = className;
+      AB[i].className = 'ability ' + (CM.gcd > 0 || cd > 0 ? 'oncooldown' : 'ready');
     }
   }
 }
