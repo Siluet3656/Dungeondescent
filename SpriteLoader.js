@@ -81,16 +81,28 @@ export async function init() {
   if (_initialized) return;
   
   const basePath = 'Resources/Sprites/';
+  console.log(`[SpriteLoader] Starting sprite preload from "${basePath}".`);
+  console.log(`[SpriteLoader] Keys to load:`, Object.keys(SPRITE_KEYS));
+
   const loadPromises = [];
   
   for (const [key, filename] of Object.entries(SPRITE_KEYS)) {
-    loadPromises.push(_loadSprite(key, basePath + filename));
-  }
+    const url = basePath + filename;
+    loadPromises.push(_loadSprite(filename, url));
+}
   
   await Promise.allSettled(loadPromises);
   _initialized = true;
   
-  console.log(`[SpriteLoader] Initialized: ${_sprites.size}/${Object.keys(SPRITE_KEYS).length} sprites loaded`);
+  const loadedCount = _sprites.size;
+  const totalCount = Object.keys(SPRITE_KEYS).length;
+  console.log(`[SpriteLoader] Preload complete. ${loadedCount}/${totalCount} sprites loaded.`);
+  
+  if (loadedCount < totalCount) {
+    console.warn(`[SpriteLoader] Missing sprites: ${
+      Object.keys(SPRITE_KEYS).filter(k => !_loadStatus.get(k)).join(', ')
+    }. The game will use fallback primitives for these.`);
+  }
 }
 
 /**
@@ -99,25 +111,26 @@ export async function init() {
  * @param {string} url - Path to the image file
  * @returns {Promise<HTMLImageElement|null>}
  */
-async function _loadSprite(key, url) {
+async function _loadSprite(spriteName, url) {   // ← переименовали
+  console.log(`[SpriteLoader] Attempting to load: ${spriteName} from ${url}`);
   return new Promise((resolve) => {
     const img = new Image();
     
     img.onload = () => {
-      _sprites.set(key, img);
-      _loadStatus.set(key, true);
-      console.log(`[SpriteLoader] Loaded: ${key} (${img.width}x${img.height})`);
+      _sprites.set(spriteName, img);           // ← сохраняем по spriteName (имени файла)
+      _loadStatus.set(spriteName, true);
+      console.log(`[SpriteLoader] ✔ Loaded: ${spriteName} (${img.naturalWidth}x${img.naturalHeight})`);
       resolve(img);
     };
     
-    img.onerror = () => {
-      _loadStatus.set(key, false);
-      console.log(`[SpriteLoader] Sprite not found: ${url}`);
+    img.onerror = (err) => {
+      _loadStatus.set(spriteName, false);
+      console.error(`[SpriteLoader] ✘ Failed to load: ${spriteName} (${url})`, err);
       resolve(null);
     };
     
-    // Add cache-busting parameter to force reload
-    img.src = url + '?v=' + Date.now();
+    // Убираем cache-busting — он не нужен и может мешать
+    img.src = url;   // было url + '?v=' + Date.now();
   });
 }
 
@@ -131,7 +144,11 @@ async function _loadSprite(key, url) {
  * @returns {HTMLImageElement|null} The image or null if not loaded
  */
 export function getSprite(key) {
-  return _sprites.get(key) || null;
+  const sprite = _sprites.get(key);
+  if (!sprite) {
+    console.warn(`[SpriteLoader] getSprite("${key}") returned null. Loaded keys:`, Array.from(_sprites.keys()));
+  }
+  return sprite || null;
 }
 
 /**
@@ -163,22 +180,29 @@ export function isInitialized() {
  */
 export function drawSprite(ctx, key, x, y, size, fallbackFn) {
   const sprite = _sprites.get(key);
-
-  if (sprite && _loadStatus.get(key) === true && sprite.complete && sprite.naturalWidth > 0) {
+  if (sprite && sprite.complete && sprite.naturalWidth > 0) {
+    console.debug(`[drawSprite] drawing image for ${key}, size=${size}`);
+    // Sprite loaded and usable
     const diameter = size * 2;
     ctx.save();
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(
-      sprite,
-      Math.floor(x - diameter / 2),
-      Math.floor(y - diameter / 2),
-      Math.floor(diameter),
-      Math.floor(diameter)
-    );
+    try {
+      ctx.drawImage(
+        sprite,
+        Math.floor(x - diameter / 2),
+        Math.floor(y - diameter / 2),
+        Math.floor(diameter),
+        Math.floor(diameter)
+      );
+    } catch (e) {
+      console.warn(`[SpriteLoader] drawImage error for ${key}:`, e);
+      if (fallbackFn) fallbackFn(ctx, x, y, size);
+    }
     ctx.restore();
-  } else if (fallbackFn) {
-    fallbackFn(ctx, x, y, size);
+  } else {
+    console.debug(`[drawSprite] FALLBACK for ${key}, sprite=${!!sprite}, complete=${sprite?.complete}, nw=${sprite?.naturalWidth}`);
+    if (fallbackFn) fallbackFn(ctx, x, y, size);
   }
 }
 
@@ -194,6 +218,7 @@ export function getLoadedKeys() {
  * Clear all cached sprites (useful for hot-reloading during development).
  */
 export function clearCache() {
+  console.log('[SpriteLoader] Clearing cache and resetting.');
   _sprites.clear();
   _loadStatus.clear();
   _initialized = false;
